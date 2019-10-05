@@ -12,72 +12,69 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 )
 
-type Cardinal byte
+type cardinal byte
 
-type Block struct {
+type block struct {
 	x    int
 	y    int
-	next *Block
-}
-
-func (b1 *Block) positionEquals(b2 *Block) bool {
-	return b1.x == b2.x && b1.y == b2.y
+	next *block
 }
 
 const (
-	NONE  Cardinal = 0x0
-	UP    Cardinal = 0x1
-	DOWN  Cardinal = 0x2
-	LEFT  Cardinal = 0x4
-	RIGHT Cardinal = 0x8
+	none  cardinal = 0x0
+	up    cardinal = 0x1
+	down  cardinal = 0x2
+	left  cardinal = 0x4
+	right cardinal = 0x8
 )
 
 var (
-	window_size, rows, snake_width int
-	occupied                       []bool
+	picture                      *pixel.PictureData
+	windowSize, rows, snakeWidth int
+	occupied                     []bool
 )
 
-func do_draw_block(block *Block, picture *pixel.PictureData, color color.RGBA) {
-	for y := block.y * snake_width; y < (block.y+1)*snake_width; y++ {
-		for x := block.x * snake_width; x < (block.x+1)*snake_width; x++ {
+func drawBlockWithColor(block *block, color color.RGBA) {
+	for y := block.y * snakeWidth; y < (block.y+1)*snakeWidth; y++ {
+		for x := block.x * snakeWidth; x < (block.x+1)*snakeWidth; x++ {
 			picture.Pix[y*picture.Stride+x] = color
 		}
 	}
 }
 
-func draw_block(block *Block, picture *pixel.PictureData) {
-	do_draw_block(block, picture, colornames.White)
+func drawBlock(block *block) {
+	drawBlockWithColor(block, colornames.White)
 }
 
-func erase_block(block *Block, picture *pixel.PictureData) {
-	do_draw_block(block, picture, colornames.Black)
+func eraseBlock(block *block) {
+	drawBlockWithColor(block, colornames.Black)
 }
 
-func get_random_block(existing *Block) *Block {
-	var new_block *Block
+func getRandomBlock() *block {
+	var newBlock *block
 	do := true
 	for do {
-		new_block = &Block{
+		newBlock = &block{
 			x: rand.Intn(rows),
 			y: rand.Intn(rows),
 		}
-		do = occupied[new_block.y*rows+new_block.x]
+		do = occupied[newBlock.y*rows+newBlock.x]
 	}
-	return new_block
+	return newBlock
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	pixelgl.Run(func() {
-		window_size = 1000
+		windowSize = 1000
 		rows = 100
-		snake_width = window_size / rows
+		snakeWidth = windowSize / rows
 
 		window, err := pixelgl.NewWindow(pixelgl.WindowConfig{
 			Title:  "Snake",
-			Bounds: pixel.R(0, 0, float64(window_size), float64(window_size)),
+			Bounds: pixel.R(0, 0, float64(windowSize), float64(windowSize)),
 			// Resizable: true,
-			// VSync: true,
+			VSync: true,
 		})
 		if err != nil {
 			panic(err)
@@ -87,18 +84,18 @@ func main() {
 			Y: 27,
 		})
 
-		picture := pixel.MakePictureData(window.Bounds())
+		picture = pixel.MakePictureData(window.Bounds())
 		sprite := pixel.NewSprite(picture, picture.Rect)
 
 		occupied = make([]bool, rows*rows)
 
-		var direction, new_direction Cardinal
-		head := get_random_block(nil)
+		var direction, newDirection cardinal
+		head := getRandomBlock()
 		occupied[head.y*rows+head.x] = true
 		tail := head
-		draw_block(head, picture)
-		food := get_random_block(tail)
-		do_draw_block(food, picture, colornames.Chartreuse)
+		drawBlock(head)
+		food := getRandomBlock()
+		drawBlockWithColor(food, colornames.Chartreuse)
 
 		var accumulator int64 = 0
 		var dt int64 = time.Second.Nanoseconds() / int64(30)
@@ -106,66 +103,66 @@ func main() {
 	MAIN_LOOP:
 		for !window.Closed() {
 			now := time.Now()
-			frame_time := now.Sub(last).Nanoseconds()
-			accumulator += frame_time
+			frameTime := now.Sub(last).Nanoseconds()
+			accumulator += frameTime
 			last = now
 
 			switch {
 			case window.JustPressed(pixelgl.KeyEscape):
 				window.Destroy()
 				break MAIN_LOOP
-			case direction != DOWN && window.JustPressed(pixelgl.KeyUp):
-				new_direction = UP
-			case direction != UP && window.JustPressed(pixelgl.KeyDown):
-				new_direction = DOWN
-			case direction != RIGHT && window.JustPressed(pixelgl.KeyLeft):
-				new_direction = LEFT
-			case direction != LEFT && window.JustPressed(pixelgl.KeyRight):
-				new_direction = RIGHT
+			case direction != down && window.JustPressed(pixelgl.KeyUp):
+				newDirection = up
+			case direction != up && window.JustPressed(pixelgl.KeyDown):
+				newDirection = down
+			case direction != right && window.JustPressed(pixelgl.KeyLeft):
+				newDirection = left
+			case direction != left && window.JustPressed(pixelgl.KeyRight):
+				newDirection = right
 			}
 
 			if accumulator >= dt {
-				direction = new_direction
-				if direction != NONE {
-					var new_x, new_y int
+				direction = newDirection
+				if direction != none {
+					var newX, newY int
 					switch direction {
-					case UP:
-						new_x = head.x
-						new_y = head.y + 1
-					case DOWN:
-						new_x = head.x
-						new_y = head.y - 1
-					case LEFT:
-						new_x = head.x - 1
-						new_y = head.y
-					case RIGHT:
-						new_x = head.x + 1
-						new_y = head.y
+					case up:
+						newX = head.x
+						newY = head.y + 1
+					case down:
+						newX = head.x
+						newY = head.y - 1
+					case left:
+						newX = head.x - 1
+						newY = head.y
+					case right:
+						newX = head.x + 1
+						newY = head.y
 					}
 
-					if new_x < 0 || new_x >= rows || new_y < 0 || new_y >= rows {
-						fmt.Printf("%d, %d out of bounds\n", new_x, new_y)
+					if newX < 0 || newX >= rows || newY < 0 || newY >= rows {
+						fmt.Printf("%d, %d out of bounds\n", newX, newY)
 						break MAIN_LOOP
 					}
 
-					head.next = &Block{
-						x: new_x,
-						y: new_y,
+					head.next = &block{
+						x: newX,
+						y: newY,
 					}
 					head = head.next
-					draw_block(head, picture)
+					drawBlock(head)
 
-					if head.positionEquals(food) {
+					if head.x == food.x && head.y == food.y {
 						fmt.Printf("Yum!\n")
-						food = get_random_block(tail)
-						do_draw_block(food, picture, colornames.Chartreuse)
+						food = getRandomBlock()
+						drawBlockWithColor(food, colornames.Chartreuse)
 
 					} else {
 						occupied[tail.y*rows+tail.x] = false
-						erase_block(tail, picture)
-						tail_next := tail.next
+						eraseBlock(tail)
+						tailNext := tail.next
 						tail.next = nil
-						tail = tail_next
+						tail = tailNext
 					}
 
 					if occupied[head.y*rows+head.x] {
