@@ -34,33 +34,33 @@ var (
 	occupied                     []bool
 )
 
-func drawBlockWithColor(block *block, color color.RGBA) {
-	for y := block.y * snakeWidth; y < (block.y+1)*snakeWidth; y++ {
-		for x := block.x * snakeWidth; x < (block.x+1)*snakeWidth; x++ {
-			picture.Pix[y*picture.Stride+x] = color
+func drawBlockWithColor(b *block, c color.RGBA) {
+	for y := b.y * snakeWidth; y < (b.y+1)*snakeWidth; y++ {
+		for x := b.x * snakeWidth; x < (b.x+1)*snakeWidth; x++ {
+			picture.Pix[y*picture.Stride+x] = c
 		}
 	}
 }
 
-func drawBlock(block *block) {
-	drawBlockWithColor(block, colornames.White)
+func drawBlock(b *block) {
+	drawBlockWithColor(b, colornames.White)
 }
 
-func eraseBlock(block *block) {
-	drawBlockWithColor(block, colornames.Black)
+func eraseBlock(b *block) {
+	drawBlockWithColor(b, colornames.Black)
 }
 
 func getRandomBlock() *block {
-	var newBlock *block
+	var b *block
 	do := true
 	for do {
-		newBlock = &block{
+		b = &block{
 			x: rand.Intn(rows),
 			y: rand.Intn(rows),
 		}
-		do = occupied[newBlock.y*rows+newBlock.x]
+		do = occupied[b.y*rows+b.x]
 	}
-	return newBlock
+	return b
 }
 
 func main() {
