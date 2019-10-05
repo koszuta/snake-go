@@ -62,6 +62,7 @@ func getRandomBlock() *block {
 	}
 	return b
 }
+
 func run() {
 	windowSize = 1000
 	rows = 100
